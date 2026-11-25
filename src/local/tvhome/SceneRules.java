@@ -14,8 +14,8 @@ final class SceneRules {
     /** What to show. Levels are 0..1. */
     static final class Scene {
         float starLevel;
-        /** How much of the moon shows through the cloud: 1 clear, 0 hidden (overcast or rain). */
-        float moonLevel;
+        /** How much of the sun or moon shows through the cloud: 1 clear, 0 hidden (overcast or rain). */
+        float bodyLevel;
         int clouds;
         boolean wisps;
         float mistLevel;
@@ -57,7 +57,7 @@ final class SceneRules {
 
         scene.rainLevel = rainLevel(condition);
         scene.starLevel = scene.rainLevel > 0f ? 0f : starLevel(phase, dark, dawn, clock, minute, cover);
-        scene.moonLevel = moonLevel(scene.rainLevel, cover);
+        scene.bodyLevel = throughCloud(scene.rainLevel, cover);
         scene.clouds = dark ? 0 : cloudCount(phase, dawn, cover);
         scene.wisps = phase == SkyClock.Phase.MORNING && minute >= MIST_GONE_MINUTE && clearish;
         scene.mistLevel = mistLevel(phase, clock, minute, condition);
@@ -81,20 +81,20 @@ final class SceneRules {
         return level * (1f - hiddenByCloud);
     }
 
-    /** Cloud up to this much leaves the moon clear; from here it fades. */
-    static final int MOON_FADES_FROM_COVER = 40;
-    /** By this much cloud (overcast) the moon is hidden. */
-    static final int MOON_HIDDEN_AT_COVER = 90;
+    /** Cloud up to this much leaves the sun and moon clear; from here they fade. */
+    static final int CLEAR_UP_TO_COVER = 40;
+    /** By this much cloud (overcast) the sun and moon are hidden. */
+    static final int HIDDEN_AT_COVER = 90;
 
-    /** The moon shows clear through light cloud, fades as cloud thickens, and is hidden when overcast or raining. */
-    static float moonLevel(float rainLevel, int cloudCoverPercent) {
+    /** The sun and moon show clear through light cloud, fade as it thickens, and hide when overcast or raining. */
+    static float throughCloud(float rainLevel, int cloudCoverPercent) {
         if (rainLevel > 0f) {
             return 0f;
         }
         if (cloudCoverPercent < 0) {
             return 1f;
         }
-        float thickening = (cloudCoverPercent - MOON_FADES_FROM_COVER) / (float) (MOON_HIDDEN_AT_COVER - MOON_FADES_FROM_COVER);
+        float thickening = (cloudCoverPercent - CLEAR_UP_TO_COVER) / (float) (HIDDEN_AT_COVER - CLEAR_UP_TO_COVER);
         return 1f - clamp01(thickening);
     }
 

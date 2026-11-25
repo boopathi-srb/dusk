@@ -420,7 +420,7 @@ public final class HomeActivity extends Activity {
         dayLine.setText(DateLine.dayAndDate(shownTime));
         timeLine.setText(DateLine.time(shownTime, use24Hour));
         SceneRules.Scene decided = SceneRules.decide(skyClock, minute, weather);
-        sky.setMoonLevel(decided.moonLevel);
+        sky.setBodyLevel(decided.bodyLevel);
         scene.apply(decided, visible, sky.sunPoint());
         greeting.setTextColor(palette.textPrimary);
         dayLine.setTextColor(palette.textSecondary);

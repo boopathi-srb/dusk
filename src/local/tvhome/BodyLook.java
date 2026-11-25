@@ -79,6 +79,16 @@ final class BodyLook {
         return new BodyLook(blend(SUNRISE_ORANGE, DUSK_RED, (warmth - 0.5f) * 2f), blend(SUNRISE_GLOW, DUSK_GLOW, (warmth - 0.5f) * 2f), 1f);
     }
 
+    /** This look seen through cloud: body and glow faded by {@code level} (1 clear, 0 hidden). */
+    BodyLook dimmed(float level) {
+        float share = Float.isNaN(level) ? 0f : Math.max(0f, Math.min(1f, level));
+        return new BodyLook(scaleAlpha(body, share), scaleAlpha(glowCore, share), glowScale);
+    }
+
+    private static int scaleAlpha(int colour, float share) {
+        return (colour & 0x00FFFFFF) | Math.round(((colour >>> 24) & 0xFF) * share) << 24;
+    }
+
     /** Mixes two ARGB colours channel by channel; {@code amount} 0 = {@code from}, 1 = {@code to}. */
     static int blend(int from, int to, float amount) {
         float share = Float.isNaN(amount) ? 0f : Math.max(0f, Math.min(1f, amount));

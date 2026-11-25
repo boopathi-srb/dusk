@@ -457,12 +457,13 @@ public final class LogicTests {
         check("overcast night (100% cloud), no stars", cloudyNight.starLevel == 0f);
         WeatherRules.Report halfCloud = new WeatherRules.Report(22, 2, 50, SUNRISE, SUNSET, NOW);
         check("half-cloudy night, half the stars", near(SceneRules.decide(CLOCK, 23 * 60, halfCloud).starLevel, 0.5f));
-        check("moon: clear night shows it fully", clearNight.moonLevel == 1f);
-        check("moon: hidden when overcast", cloudyNight.moonLevel == 0f);
-        check("moon: hidden in rain", stormNight.moonLevel == 0f);
-        check("moon: light cloud leaves it clear", SceneRules.moonLevel(0f, SceneRules.MOON_FADES_FROM_COVER) == 1f);
-        check("moon: fades as cloud thickens", near(SceneRules.moonLevel(0f, 65), 0.5f));
-        check("moon: no weather reading shows it", SceneRules.moonLevel(0f, -1) == 1f);
+        check("sun and moon: clear sky shows them fully", clearNight.bodyLevel == 1f);
+        check("sun and moon: hidden when overcast", cloudyNight.bodyLevel == 0f);
+        check("sun and moon: hidden in rain", stormNight.bodyLevel == 0f
+                && SceneRules.decide(CLOCK, 15 * 60, rain).bodyLevel == 0f);
+        check("sun and moon: light cloud leaves them clear", SceneRules.throughCloud(0f, SceneRules.CLEAR_UP_TO_COVER) == 1f);
+        check("sun and moon: fade as cloud thickens", near(SceneRules.throughCloud(0f, 65), 0.5f));
+        check("sun and moon: no weather reading shows them", SceneRules.throughCloud(0f, -1) == 1f);
         check("staged cover: clear has none, rain is full, unknown stays unknown",
                 WeatherRules.typicalCover(WeatherRules.Condition.CLEAR) == 0
                 && WeatherRules.typicalCover(WeatherRules.Condition.RAIN) == 100
@@ -496,6 +497,11 @@ public final class LogicTests {
         check("moon glow is faint", ((night.glowCore >>> 24) & 0xFF) < ((afternoon.glowCore >>> 24) & 0xFF));
         check("glow edge is clear", (night.glowEdge >>> 24) == 0 && (night.glowEdge & 0xFFFFFF) == (night.glowCore & 0xFFFFFF));
         check("no clock gives the moon", BodyLook.at(null, 0).glowScale < 1f);
+        BodyLook halfHidden = afternoon.dimmed(0.5f);
+        check("dimmed: half the alpha, same colour", ((halfHidden.body >>> 24) & 0xFF) == 128
+                && (halfHidden.body & 0xFFFFFF) == (afternoon.body & 0xFFFFFF) && halfHidden.glowScale == afternoon.glowScale);
+        check("dimmed: fully hidden and clamped", ((afternoon.dimmed(0f).body >>> 24) & 0xFF) == 0
+                && afternoon.dimmed(3f).body == afternoon.body && ((afternoon.dimmed(Float.NaN).glowCore >>> 24) & 0xFF) == 0);
         check("blend start", BodyLook.blend(0xFF000000, 0xFFFFFFFF, 0f) == 0xFF000000);
         check("blend end", BodyLook.blend(0xFF000000, 0xFFFFFFFF, 1f) == 0xFFFFFFFF);
         check("blend middle", BodyLook.blend(0x00000000, 0xFEFEFEFE, 0.5f) == 0x7F7F7F7F);

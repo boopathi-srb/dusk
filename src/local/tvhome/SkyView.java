@@ -42,8 +42,8 @@ final class SkyView extends View {
     private int minuteOfDay = -1;
     private boolean drawStillStars = true;
     private float moonPhase = MoonRules.phaseAt(System.currentTimeMillis());
-    /** How much the cloud lets the moon through: 1 clear, 0 hidden. */
-    private float moonLevel = 1f;
+    /** How much the cloud lets the sun and moon through: 1 clear, 0 hidden. */
+    private float bodyLevel = 1f;
 
     SkyView(Context context, SkyClock clock) {
         super(context);
@@ -70,13 +70,13 @@ final class SkyView extends View {
         invalidate();
     }
 
-    /** How much of the moon shows through tonight's cloud (from the weather): 1 clear, 0 hidden. */
-    void setMoonLevel(float level) {
+    /** How much of the sun or moon shows through the cloud (from the weather): 1 clear, 0 hidden. */
+    void setBodyLevel(float level) {
         float clamped = Math.max(0f, Math.min(1f, level));
-        if (Math.abs(clamped - moonLevel) < 0.01f) {
+        if (Math.abs(clamped - bodyLevel) < 0.01f) {
             return;
         }
-        moonLevel = clamped;
+        bodyLevel = clamped;
         invalidate();
     }
 
@@ -174,27 +174,28 @@ final class SkyView extends View {
 
     private void drawSun(Canvas canvas, int width, int height) {
         float progress = clock.sunProgressAt(minuteOfDay);
-        if (progress == SkyClock.NOT_IN_SKY) {
+        if (progress == SkyClock.NOT_IN_SKY || bodyLevel <= 0f) {
             return;
         }
         float[] point = ArcGeometry.pointAt(progress, width, height);
-        drawGlow(canvas, point, BodyLook.at(clock, minuteOfDay), width);
-        bodyPaint.setColor(BodyLook.at(clock, minuteOfDay).body);
+        BodyLook look = BodyLook.at(clock, minuteOfDay).dimmed(bodyLevel);
+        drawGlow(canvas, point, look, width);
+        bodyPaint.setColor(look.body);
         canvas.drawCircle(point[0], point[1], BODY_RADIUS * width / DESIGN_WIDTH, bodyPaint);
     }
 
     private void drawMoon(Canvas canvas, int width, int height) {
         float progress = MoonRules.progressAt(clock, minuteOfDay, moonPhase);
-        if (progress == SkyClock.NOT_IN_SKY || moonLevel <= 0f) {
+        if (progress == SkyClock.NOT_IN_SKY || bodyLevel <= 0f) {
             return;
         }
         float[] point = ArcGeometry.pointAt(progress, width, height);
-        float brightness = MoonRules.brightnessAt(clock, minuteOfDay) * moonLevel;
+        float brightness = MoonRules.brightnessAt(clock, minuteOfDay) * bodyLevel;
         BodyLook look = BodyLook.moon(brightness * MoonRules.litShare(moonPhase));
         drawGlow(canvas, point, look, width);
         float radius = BODY_RADIUS * width / DESIGN_WIDTH;
         moonDisc.set(point[0] - radius, point[1] - radius, point[0] + radius, point[1] + radius);
-        moonDarkPaint.setAlpha(Math.round(((MOON_DARK_SIDE >>> 24) & 0xFF) * moonLevel));
+        moonDarkPaint.setAlpha(Math.round(((MOON_DARK_SIDE >>> 24) & 0xFF) * bodyLevel));
         canvas.drawOval(moonDisc, moonDarkPaint);
         bodyPaint.setColor(BodyLook.moon(brightness).body);
         canvas.drawPath(litPart(point, radius), bodyPaint);
