@@ -40,6 +40,20 @@ final class WeatherRules {
     private WeatherRules() {
     }
 
+    /** A believable cloud cover for a condition, for staged previews (adb); -1 when unknown. */
+    static int typicalCover(Condition condition) {
+        switch (condition) {
+            case CLEAR:
+                return 0;
+            case PARTLY_CLOUDY:
+                return 40;
+            case UNKNOWN:
+                return -1;
+            default:
+                return 100;
+        }
+    }
+
     /** WMO weather codes, as Open-Meteo reports them. Snow is shown as cloud: it does not happen here. */
     static Condition fromCode(int code) {
         if (code == 0 || code == 1) {

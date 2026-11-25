@@ -2,5 +2,7 @@
 build/
 # Your signing key and its password: never publish these
 signing/
+# Screenshots and clips kept for the blog (only docs/ is published)
+media/
 # macOS
 .DS_Store

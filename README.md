@@ -8,7 +8,18 @@ rain follow the weather outside.
 Built from scratch with no third-party code or libraries, and no Gradle: just the JDK and
 Google's Android SDK tools.
 
-> Screenshots and a short video are coming with the blog post.
+![Dusk at golden hour: the red sun setting on the right, the app dock and Continue watching](docs/home.jpg)
+
+<table>
+  <tr>
+    <td><img src="docs/sky-preview.gif" alt="Sky preview: a whole day and night in a few seconds, with the sun, the real moon and stars"></td>
+    <td><img src="docs/dock.gif" alt="The app dock magnifying as focus moves across apps"></td>
+  </tr>
+  <tr>
+    <td align="center">Sky preview: a day and night in seconds</td>
+    <td align="center">The app dock</td>
+  </tr>
+</table>
 
 ## Features
 

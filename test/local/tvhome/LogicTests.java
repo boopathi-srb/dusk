@@ -463,6 +463,11 @@ public final class LogicTests {
         check("moon: light cloud leaves it clear", SceneRules.moonLevel(0f, SceneRules.MOON_FADES_FROM_COVER) == 1f);
         check("moon: fades as cloud thickens", near(SceneRules.moonLevel(0f, 65), 0.5f));
         check("moon: no weather reading shows it", SceneRules.moonLevel(0f, -1) == 1f);
+        check("staged cover: clear has none, rain is full, unknown stays unknown",
+                WeatherRules.typicalCover(WeatherRules.Condition.CLEAR) == 0
+                && WeatherRules.typicalCover(WeatherRules.Condition.RAIN) == 100
+                && WeatherRules.typicalCover(WeatherRules.Condition.PARTLY_CLOUDY) == 40
+                && WeatherRules.typicalCover(WeatherRules.Condition.UNKNOWN) == -1);
         check("fog brings mist by day", SceneRules.decide(CLOCK, 15 * 60, fog).mistLevel == 1f);
         check("fog at night shows no mist", SceneRules.decide(CLOCK, 23 * 60, fog).mistLevel == 0f);
         check("drizzle is light", SceneRules.rainLevel(WeatherRules.Condition.DRIZZLE) < SceneRules.rainLevel(WeatherRules.Condition.RAIN));

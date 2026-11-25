@@ -219,6 +219,8 @@ public final class HomeActivity extends Activity {
         previewMinute = intent == null ? -1 : intent.getIntExtra(EXTRA_PREVIEW_MINUTE, -1);
         previewWeatherCode = intent == null ? -1 : intent.getIntExtra(EXTRA_PREVIEW_WEATHER, -1);
         previewDays = intent == null ? 0 : intent.getIntExtra(EXTRA_PREVIEW_DAYS, 0);
+        previewTime = previewMinute < 0 ? null : LocalDateTime.now().toLocalDate().plusDays(previewDays)
+                .atTime(previewMinute / 60, previewMinute % 60);
         applySettingsFrom(intent);
         if (intent != null && intent.getBooleanExtra(EXTRA_CLEAR_CONTINUE, false)) {
             clearContinueRequested = true;
@@ -413,7 +415,7 @@ public final class HomeActivity extends Activity {
         subtitle.setText(weatherLine == null ? "" : weatherLine);
         subtitle.setVisibility(weatherLine == null || weatherLine.isEmpty() ? View.GONE : View.VISIBLE);
         LocalDateTime shownTime = previewTime != null ? previewTime : LocalDateTime.now();
-        LocalDateTime moonTime = shownTime.plusDays(previewDays);
+        LocalDateTime moonTime = shownTime;
         sky.setMoonPhase(MoonRules.phaseAt(moonTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()));
         dayLine.setText(DateLine.dayAndDate(shownTime));
         timeLine.setText(DateLine.time(shownTime, use24Hour));
@@ -459,15 +461,27 @@ public final class HomeActivity extends Activity {
 
     /** The kept weather reading if it is recent enough, or a made-up one while previewing over adb. */
     private WeatherRules.Report currentWeather() {
+        if (skyPreviewStartedAt >= 0 && previewWeatherCode < 0) {
+            return clearSky();
+        }
         if (previewWeatherCode >= 0) {
-            return new WeatherRules.Report(24, previewWeatherCode, 80,
-                    skyClock.sunriseMinute(), HomeSettings.FALLBACK_SUNSET_MINUTE, System.currentTimeMillis());
+            int cover = WeatherRules.typicalCover(WeatherRules.fromCode(previewWeatherCode));
+            return new WeatherRules.Report(24, previewWeatherCode, cover,
+                    skyClock.sunriseMinute(), skyClock.sunsetMinute(), System.currentTimeMillis());
         }
         WeatherRules.Report kept = WeatherClient.cached(this);
         return WeatherRules.isUsable(kept, System.currentTimeMillis()) ? kept : null;
     }
 
     /** Asks for new weather when the kept reading is over 30 minutes old; cheap to call every minute. */
+    /** Sky preview shows off the whole day and night, so it plays under a clear sky, not tonight's cloud. */
+    private WeatherRules.Report clearSky() {
+        WeatherRules.Report real = WeatherClient.cached(this);
+        double temperature = real == null ? 24 : real.temperatureC;
+        return new WeatherRules.Report(temperature, 0, 0, skyClock.sunriseMinute(), skyClock.sunsetMinute(),
+                System.currentTimeMillis());
+    }
+
     private void fetchWeatherIfDue() {
         CityLookup.refreshIfNeeded(this, this::fetchWeatherIfDue);
         WeatherClient.refreshIfNeeded(this, report -> {
