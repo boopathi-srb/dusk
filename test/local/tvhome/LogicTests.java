@@ -263,6 +263,10 @@ public final class LogicTests {
         check("trailing whitespace tolerated", HomePressLog.isHomePressLine(press + " \r"));
         check("Settings opening home is not a press", !HomePressLog.isHomePressLine(bySettings));
         check("boot FallbackHome is not a press", !HomePressLog.isHomePressLine(boot));
+        String bySleep = prefix + "START u0 {act=android.intent.action.MAIN cat=[android.intent.category.HOME]"
+                + " flg=0x10200000 cmp=com.amazon.tv.launcher/.ui.HomeActivity_vNext (has extras)} from uid 1000";
+        check("Fire OS sending the TV home at sleep is taken over", HomePressLog.isHomePressLine(bySleep));
+        check("uid 1000 followed by digits is not", !HomePressLog.isHomePressLine(bySleep + "5"));
         check("uid 0 followed by digits is not a press", !HomePressLog.isHomePressLine(press + "5"));
         check("null is not a press", !HomePressLog.isHomePressLine(null));
         check("empty is not a press", !HomePressLog.isHomePressLine(""));

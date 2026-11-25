@@ -9,8 +9,12 @@ package local.tvhome;
  *   cat=[android.intent.category.HOME] flg=0x10000100
  *   cmp=com.amazon.tv.launcher/.ui.HomeActivity_vNext (has extras)} from uid 0
  *
- * The same activity is also started by other callers (Settings uses uid 10183).
- * Only uid 0 is a Home press.
+ * The same activity is also started by other callers (Settings uses uid 10183); those are left alone.
+ * Two callers mean "show home" and are taken over:
+ *   uid 0     the remote's Home button;
+ *   uid 1000  Fire OS itself, e.g. sending the TV back to home when it goes to sleep (seen 11-26:
+ *             "... flg=0x10200000 cmp=com.amazon.tv.launcher/.ui.HomeActivity_vNext (has extras)} from uid 1000"),
+ *             so Dusk, not Amazon's home, is on screen when the TV wakes.
  */
 final class HomePressLog {
 
@@ -22,7 +26,8 @@ final class HomePressLog {
     private static final String HOME_CATEGORY_MARKER = "cat=[android.intent.category.HOME]";
     private static final String AMAZON_HOME_COMPONENT_MARKER =
             "cmp=com.amazon.tv.launcher/.ui.HomeActivity_vNext";
-    private static final String SYSTEM_CALLER_SUFFIX = "} from uid 0";
+    private static final String HOME_BUTTON_CALLER_SUFFIX = "} from uid 0";
+    private static final String SYSTEM_CALLER_SUFFIX = "} from uid 1000";
 
     private HomePressLog() {
     }
@@ -35,7 +40,7 @@ final class HomePressLog {
         return line.contains(START_MARKER)
                 && line.contains(HOME_CATEGORY_MARKER)
                 && line.contains(AMAZON_HOME_COMPONENT_MARKER)
-                && line.endsWith(SYSTEM_CALLER_SUFFIX);
+                && (line.endsWith(HOME_BUTTON_CALLER_SUFFIX) || line.endsWith(SYSTEM_CALLER_SUFFIX));
     }
 
     /** Follows only activity-manager lines written after {@code sinceTimestamp} ("MM-dd HH:mm:ss.SSS"). */
