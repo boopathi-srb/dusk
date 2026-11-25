@@ -1,0 +1,6 @@
+# Build output (recreated by ./build.sh)
+build/
+# Your signing key and its password: never publish these
+signing/
+# macOS
+.DS_Store

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Where a tile's focus animation is heading: {scale, shiftX, shiftY}. -->
+    <item name="focus_target" type="id" />
+    <!-- The control panel's first control: focus lands here when it opens. -->
+    <item name="control_first" type="id" />
+    <!-- The words shown under a focused Continue watching card. -->
+    <item name="card_title" type="id" />
+</resources>

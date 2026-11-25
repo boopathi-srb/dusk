@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dusk</string>
+    <string name="service_label">Dusk: Home button</string>
+    <string name="media_watcher_label">Dusk: Continue watching</string>
+    <string name="service_description">Opens Dusk when the remote\'s Home button is pressed.</string>
+</resources>
