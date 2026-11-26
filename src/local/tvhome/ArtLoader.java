@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.util.Log;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -28,7 +29,12 @@ final class ArtLoader {
         if (WatchNextRules.isLocalArt(artUri)) {
             return loadLocal(context, artUri);
         }
-        return WatchNextRules.isWebArt(artUri) ? loadWeb(artUri) : null;
+        return WatchNextRules.isWebArt(artUri) ? loadWeb(context, artUri) : null;
+    }
+
+    /** Whether this picture is a web link (it may be missing until Wi-Fi is up). */
+    static boolean isWebPicture(String artUri) {
+        return WatchNextRules.isWebArt(artUri);
     }
 
     private static Bitmap loadLocal(Context context, String artUri) {
@@ -40,10 +46,16 @@ final class ArtLoader {
         return decode(context, uri, shrinkFor(width));
     }
 
-    private static Bitmap loadWeb(String url) {
-        byte[] bytes = Web.get(url, MAX_DOWNLOAD_BYTES, null, "ArtLoader.loadWeb");
+    /** From the copy kept on the TV when there is one; otherwise downloaded once and kept. */
+    private static Bitmap loadWeb(Context context, String url) {
+        File kept = new File(cacheFolder(context), ArtCacheRules.fileName(url));
+        byte[] bytes = kept.exists() ? readKept(kept) : null;
         if (bytes == null) {
-            return null;
+            bytes = Web.get(url, MAX_DOWNLOAD_BYTES, null, "ArtLoader.loadWeb");
+            if (bytes == null) {
+                return null;
+            }
+            keep(kept, bytes);
         }
         BitmapFactory.Options boundsOnly = new BitmapFactory.Options();
         boundsOnly.inJustDecodeBounds = true;
@@ -53,6 +65,33 @@ final class ArtLoader {
             return null;
         }
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.length, shrinkFor(boundsOnly.outWidth));
+    }
+
+    private static File cacheFolder(Context context) {
+        File folder = new File(context.getCacheDir(), "art");
+        if (!folder.isDirectory() && !folder.mkdirs()) {
+            Log.w(HomeState.LOG_TAG, "ArtLoader.cacheFolder: could not create " + folder);
+        }
+        return folder;
+    }
+
+    /** Reading a file reports failure only by throwing; this logs it and returns null (then it is fetched again). */
+    private static byte[] readKept(File file) {
+        try {
+            return java.nio.file.Files.readAllBytes(file.toPath());
+        } catch (IOException unreadable) {
+            Log.w(HomeState.LOG_TAG, "ArtLoader.readKept: could not read " + file.getName(), unreadable);
+            return null;
+        }
+    }
+
+    /** Writing reports failure only by throwing; a picture that can't be kept is simply fetched next time. */
+    private static void keep(File file, byte[] bytes) {
+        try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+            out.write(bytes);
+        } catch (IOException failed) {
+            Log.w(HomeState.LOG_TAG, "ArtLoader.keep: could not keep " + file.getName(), failed);
+        }
     }
 
     private static BitmapFactory.Options shrinkFor(int width) {

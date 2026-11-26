@@ -18,15 +18,26 @@ final class WeatherRules {
         final double temperatureC;
         final int weatherCode;
         final int cloudCoverPercent;
+        /** Low and mid cloud, the thick kind that hides the sun and moon; equals the total when layers are unknown. */
+        final int thickCoverPercent;
+        /** High, thin cloud (cirrus) the sun shines through; -1 when unknown. */
+        final int highCoverPercent;
         final int sunriseMinute;
         final int sunsetMinute;
         final long fetchedAtMs;
 
         Report(double temperatureC, int weatherCode, int cloudCoverPercent,
                 int sunriseMinute, int sunsetMinute, long fetchedAtMs) {
+            this(temperatureC, weatherCode, cloudCoverPercent, cloudCoverPercent, -1, sunriseMinute, sunsetMinute, fetchedAtMs);
+        }
+
+        Report(double temperatureC, int weatherCode, int cloudCoverPercent, int thickCoverPercent, int highCoverPercent,
+                int sunriseMinute, int sunsetMinute, long fetchedAtMs) {
             this.temperatureC = temperatureC;
             this.weatherCode = weatherCode;
             this.cloudCoverPercent = cloudCoverPercent;
+            this.thickCoverPercent = thickCoverPercent;
+            this.highCoverPercent = highCoverPercent;
             this.sunriseMinute = sunriseMinute;
             this.sunsetMinute = sunsetMinute;
             this.fetchedAtMs = fetchedAtMs;
@@ -38,6 +49,14 @@ final class WeatherRules {
     }
 
     private WeatherRules() {
+    }
+
+    /** Thick cloud from the low and mid layers (the larger); the total when neither layer is known. */
+    static int thickCover(int totalPercent, int lowPercent, int midPercent) {
+        if (lowPercent < 0 && midPercent < 0) {
+            return totalPercent;
+        }
+        return Math.max(lowPercent, midPercent);
     }
 
     /** A believable cloud cover for a condition, for staged previews (adb); -1 when unknown. */

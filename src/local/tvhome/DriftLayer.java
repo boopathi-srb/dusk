@@ -2,7 +2,6 @@ package local.tvhome;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.RadialGradient;
 import android.graphics.Shader;
@@ -125,6 +124,9 @@ final class DriftLayer extends FrameLayout {
         {0.13f, 120f, 170f, 0.62f},
         {0.22f, 200f, 260f, 0.85f},
         {0.07f, 100f, 150f, 0.40f},
+        {0.27f, 150f, 230f, 0.25f},
+        {0.11f, 190f, 190f, 0.95f},
+        {0.18f, 130f, 280f, 0.52f},
     };
     static final float CLOUD_HEIGHT_RATIO = 0.45f;
 
@@ -159,10 +161,18 @@ final class DriftLayer extends FrameLayout {
     }
 
     /** A wide, very soft band of mist, clearest at its ends. */
+    /**
+     * A band of haze that fades out on every side (an oval glow squashed flat), so it never shows a
+     * hard edge and can't be mistaken for a card or panel.
+     */
     static void paintMist(Canvas canvas, float width, float height, Paint paint) {
-        paint.setShader(new LinearGradient(0, 0, width, 0,
-                new int[] {0x00FFFFFF, 0x55FFFFFF, 0x66FFFFFF, 0x55FFFFFF, 0x00FFFFFF}, null, Shader.TileMode.CLAMP));
-        canvas.drawRoundRect(0, 0, width, height, height / 2f, height / 2f, paint);
+        float radius = width / 2f;
+        paint.setShader(new RadialGradient(radius, radius, radius,
+                new int[] {0x55FFFFFF, 0x33FFFFFF, 0x00FFFFFF}, new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
+        canvas.save();
+        canvas.scale(1f, height / width);
+        canvas.drawCircle(radius, radius, radius, paint);
+        canvas.restore();
         paint.setShader(null);
     }
 

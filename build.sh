@@ -19,7 +19,7 @@ KEYSTORE_PASS_FILE="$SIGNING_DIR/tvhome.pass"
 KEY_ALIAS="tvhome"
 
 # Classes with no Android types: these are what the logic tests compile and run.
-PURE_SOURCES=(SkyClock SkyPalette ArcGeometry DateLine WatchNextRules PinnedApps AppRules HomePressLog HomeState DockMagnifier MotionTiming StarMap Comet BodyLook WeatherRules SceneRules FlockPath RainField MediaHistoryRules IconTrim YouTubeRules ControlRules MoonRules ContinueHiding SettingsRules GeoRules)
+PURE_SOURCES=(SkyClock SkyPalette ArcGeometry DateLine WatchNextRules PinnedApps AppRules HomePressLog HomeState DockMagnifier MotionTiming StarMap Comet BodyLook WeatherRules SceneRules FlockPath RainField MediaHistoryRules IconTrim YouTubeRules ControlRules MoonRules ContinueHiding SettingsRules GeoRules ArtCacheRules)
 
 fail() {
     echo "BUILD FAILED at step: $1" >&2

@@ -52,12 +52,14 @@ final class SceneRules {
         boolean dawn = isDawn(clock, minute);
         WeatherRules.Condition condition = weather == null ? WeatherRules.Condition.UNKNOWN : weather.condition();
         int cover = weather == null ? -1 : weather.cloudCoverPercent;
+        int thickCover = weather == null ? -1 : weather.thickCoverPercent;
+        int highCover = weather == null ? -1 : weather.highCoverPercent;
         boolean clearish = condition == WeatherRules.Condition.CLEAR
                 || condition == WeatherRules.Condition.PARTLY_CLOUDY || condition == WeatherRules.Condition.UNKNOWN;
 
         scene.rainLevel = rainLevel(condition);
         scene.starLevel = scene.rainLevel > 0f ? 0f : starLevel(phase, dark, dawn, clock, minute, cover);
-        scene.bodyLevel = throughCloud(scene.rainLevel, cover);
+        scene.bodyLevel = throughCloud(scene.rainLevel, thickCover) * throughHaze(highCover);
         scene.clouds = dark ? 0 : cloudCount(phase, dawn, cover);
         scene.wisps = phase == SkyClock.Phase.MORNING && minute >= MIST_GONE_MINUTE && clearish;
         scene.mistLevel = mistLevel(phase, clock, minute, condition);
@@ -98,9 +100,19 @@ final class SceneRules {
         return 1f - clamp01(thickening);
     }
 
+    /** Most clouds drawn at once, on a fully cloudy sky. */
+    static final int MAX_CLOUDS = 7;
+    /** Thin high cloud (cirrus) can take at most this much off the sun or moon; they still show through. */
+    static final float HIGH_CLOUD_HAZE = 0.35f;
+
+    /** How much of the sun or moon shows through thin high cloud: a light haze, never hidden. */
+    static float throughHaze(int highCoverPercent) {
+        return highCoverPercent < 0 ? 1f : 1f - HIGH_CLOUD_HAZE * clamp01(highCoverPercent / 100f);
+    }
+
     private static int cloudCount(SkyClock.Phase phase, boolean dawn, int cover) {
         if (cover >= 0) {
-            return Math.max(0, Math.min(4, Math.round(cover / 25f)));
+            return Math.max(0, Math.min(MAX_CLOUDS, Math.round(cover * MAX_CLOUDS / 100f)));
         }
         if (phase == SkyClock.Phase.AFTERNOON) {
             return 3;

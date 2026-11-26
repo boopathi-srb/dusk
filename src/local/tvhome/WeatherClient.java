@@ -28,7 +28,7 @@ final class WeatherClient {
 
     private static final String URL_TEMPLATE = "https://api.open-meteo.com/v1/forecast"
             + "?latitude=%.4f&longitude=%.4f"
-            + "&current=temperature_2m,weather_code,cloud_cover"
+            + "&current=temperature_2m,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high"
             + "&daily=sunrise,sunset&timezone=auto&forecast_days=1";
     private static final int MAX_BYTES = 64 * 1024;
     private static final String PREFS = "weather";
@@ -80,10 +80,13 @@ final class WeatherClient {
             JSONObject root = new JSONObject(json);
             JSONObject current = root.getJSONObject("current");
             JSONObject daily = root.getJSONObject("daily");
+            int total = current.optInt("cloud_cover", -1);
             return new WeatherRules.Report(
                     current.getDouble("temperature_2m"),
                     current.getInt("weather_code"),
-                    current.optInt("cloud_cover", -1),
+                    total,
+                    WeatherRules.thickCover(total, current.optInt("cloud_cover_low", -1), current.optInt("cloud_cover_mid", -1)),
+                    current.optInt("cloud_cover_high", -1),
                     WeatherRules.minuteOf(firstOf(daily.optJSONArray("sunrise"))),
                     WeatherRules.minuteOf(firstOf(daily.optJSONArray("sunset"))),
                     fetchedAtMs);

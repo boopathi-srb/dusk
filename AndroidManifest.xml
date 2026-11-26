@@ -6,8 +6,8 @@
 <!-- READ_LOGS and READ_TV_LISTINGS are granted once over adb (see tv.sh). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="local.tvhome"
-    android:versionCode="71"
-    android:versionName="3.46">
+    android:versionCode="72"
+    android:versionName="3.47">
 
     <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="30" />
 

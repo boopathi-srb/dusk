@@ -40,6 +40,7 @@ public final class LogicTests {
         moonRules();
         continueHiding();
         cardTitles();
+        artCacheRules();
         youtubeRules();
         controlRules();
         dockMagnifier();
@@ -437,7 +438,7 @@ public final class LogicTests {
         check("no stars by day", lateMorning.starLevel == 0f);
 
         SceneRules.Scene cloudyAfternoon = SceneRules.decide(CLOCK, 15 * 60, overcast);
-        check("full cover gives four clouds", cloudyAfternoon.clouds == 4);
+        check("full cover gives the most clouds", cloudyAfternoon.clouds == SceneRules.MAX_CLOUDS);
         check("overcast greys the sky", cloudyAfternoon.gloomLevel > 0f);
         check("no sun rays in the afternoon", !cloudyAfternoon.sunRays);
         SceneRules.Scene unknownAfternoon = SceneRules.decide(CLOCK, 15 * 60, null);
@@ -473,6 +474,19 @@ public final class LogicTests {
                 && WeatherRules.typicalCover(WeatherRules.Condition.RAIN) == 100
                 && WeatherRules.typicalCover(WeatherRules.Condition.PARTLY_CLOUDY) == 40
                 && WeatherRules.typicalCover(WeatherRules.Condition.UNKNOWN) == -1);
+        WeatherRules.Report thinHighCloud = new WeatherRules.Report(21, 3, 100, 35, 99, SUNRISE, SUNSET, NOW);
+        SceneRules.Scene cirrusMorning = SceneRules.decide(CLOCK, 7 * 60 + 30, thinHighCloud);
+        check("thin high cloud: the sun shows, a little hazy", cirrusMorning.bodyLevel > 0.6f && cirrusMorning.bodyLevel < 1f);
+        check("thin high cloud: still drawn as a cloudy sky", cirrusMorning.clouds == SceneRules.MAX_CLOUDS);
+        WeatherRules.Report thickOvercast = new WeatherRules.Report(21, 3, 100, 95, 20, SUNRISE, SUNSET, NOW);
+        check("thick low cloud hides the sun", SceneRules.decide(CLOCK, 10 * 60, thickOvercast).bodyLevel == 0f);
+        check("haze: none unknown, full cirrus takes 35%", SceneRules.throughHaze(-1) == 1f
+                && near(SceneRules.throughHaze(100), 0.65f) && SceneRules.throughHaze(0) == 1f);
+        check("thick cover: larger of low and mid", WeatherRules.thickCover(100, 35, 10) == 35
+                && WeatherRules.thickCover(100, 20, 80) == 80);
+        check("thick cover: total when layers unknown", WeatherRules.thickCover(100, -1, -1) == 100
+                && WeatherRules.thickCover(60, -1, 40) == 40);
+        check("old readings without layers keep the total", new WeatherRules.Report(21, 3, 70, SUNRISE, SUNSET, NOW).thickCoverPercent == 70);
         check("fog brings mist by day", SceneRules.decide(CLOCK, 15 * 60, fog).mistLevel == 1f);
         check("fog at night shows no mist", SceneRules.decide(CLOCK, 23 * 60, fog).mistLevel == 0f);
         check("drizzle is light", SceneRules.rainLevel(WeatherRules.Condition.DRIZZLE) < SceneRules.rainLevel(WeatherRules.Condition.RAIN));
@@ -812,6 +826,20 @@ public final class LogicTests {
         check("card title: the episode survives the cut", cutEpisode.endsWith("S12 E10")
                 && cutEpisode.length() <= WatchNextRules.CARD_TITLE_MAX_CHARS);
         check("card title: none", WatchNextRules.cardTitle(null).isEmpty());
+    }
+
+    private static void artCacheRules() {
+        String name = ArtCacheRules.fileName("https://img1.hotstarext.com/image/upload/f_auto,w_544/x.jpg");
+        check("cache name: stable", name.equals(ArtCacheRules.fileName("https://img1.hotstarext.com/image/upload/f_auto,w_544/x.jpg")));
+        check("cache name: safe characters only", name.matches("art_[0-9a-f]{64}\\.img"));
+        check("cache name: different links differ", !name.equals(ArtCacheRules.fileName("https://i.ytimg.com/vi/abc/mqdefault.jpg")));
+        check("cache name: none without a link", ArtCacheRules.fileName(null) == null && ArtCacheRules.fileName("") == null);
+        check("retry: when pictures are missing and retries are left", ArtCacheRules.shouldRetry(2, 0)
+                && ArtCacheRules.shouldRetry(1, ArtCacheRules.MAX_RETRIES - 1));
+        check("retry: not when nothing is missing or retries are used up", !ArtCacheRules.shouldRetry(0, 0)
+                && !ArtCacheRules.shouldRetry(3, ArtCacheRules.MAX_RETRIES));
+        check("retry: waits 15, 30, 45 s", ArtCacheRules.retryDelayMs(0) == 15_000L && ArtCacheRules.retryDelayMs(1) == 30_000L
+                && ArtCacheRules.retryDelayMs(2) == 45_000L && ArtCacheRules.retryDelayMs(-3) == 15_000L);
     }
 
     private static void dockMagnifier() {

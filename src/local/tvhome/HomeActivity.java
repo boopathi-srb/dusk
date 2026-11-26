@@ -87,6 +87,9 @@ public final class HomeActivity extends Activity {
     private SkyClock skyClock;
     private ControlPanel controls;
     private final Runnable skyPreviewStep = this::stepSkyPreview;
+    /** Loads Continue watching again when pictures were missing; counts how many times in a row. */
+    private final Runnable retryPictures = this::loadContinueWatching;
+    private int pictureRetries;
     private long skyPreviewStartedAt = -1L;
     /** The sunrise the preview starts from (date and time); the date line follows it, through midnight. */
     private LocalDateTime skyPreviewSunrise;
@@ -573,11 +576,32 @@ public final class HomeActivity extends Activity {
             everything.addAll(WatchNextRules.onlyAppsWithoutList(MediaHistory.readAll(appContext), appLists));
             List<WatchNextRules.Item> picked = WatchNextRules.pick(everything, System.currentTimeMillis(), MAX_WATCH_CARDS);
             List<Bitmap> pictures = new ArrayList<>();
+            int missing = 0;
             for (WatchNextRules.Item item : picked) {
-                pictures.add(ArtLoader.load(appContext, item.artUri));
+                Bitmap picture = ArtLoader.load(appContext, item.artUri);
+                pictures.add(picture);
+                if (picture == null && ArtLoader.isWebPicture(item.artUri)) {
+                    missing++;
+                }
             }
+            int missingPictures = missing;
+            mainThread.post(() -> retryIfPicturesMissing(missingPictures));
             mainThread.post(() -> showContinueWatching(generation, picked, pictures));
         });
+    }
+
+    /** Pictures can be missing just after the TV starts, before Wi-Fi connects: try the row again shortly. */
+    private void retryIfPicturesMissing(int missingPictures) {
+        mainThread.removeCallbacks(retryPictures);
+        if (!ArtCacheRules.shouldRetry(missingPictures, pictureRetries)) {
+            pictureRetries = missingPictures == 0 ? 0 : pictureRetries;
+            return;
+        }
+        long delay = ArtCacheRules.retryDelayMs(pictureRetries);
+        pictureRetries++;
+        Log.i(HomeState.LOG_TAG, "retryIfPicturesMissing: missing=" + missingPictures + ", retry " + pictureRetries
+                + " in " + delay + " ms");
+        mainThread.postDelayed(retryPictures, delay);
     }
 
     /** {@code pictures} lines up with {@code items}; a missing picture leaves the card's plain background. */
